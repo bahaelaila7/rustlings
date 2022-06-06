@@ -33,11 +33,91 @@ impl Default for Person {
 // If while parsing the age, something goes wrong, then return the default of Person
 // Otherwise, then return an instantiated Person object with the results
 
-// I AM NOT DONE
 
 impl From<&str> for Person {
+    //using split_once
+    //The most elegant solution
+    //utmost use of functional primitives and combinators
     fn from(s: &str) -> Person {
+        s.split_once(',')
+            .filter(move |(name, _)| name.len() > 0)
+            .and_then(move |(name, age_str)| {
+                age_str.parse::<usize>().ok().map(move |age| Person {
+                    name: name.into(),
+                    age,
+                })
+            })
+            .unwrap_or_else(Person::default)
     }
+
+    //using split_once
+    //pattern matching imperative
+    /*
+    fn from(s: &str) -> Person {
+        if let Some((name, age_str)) = s.split_once(',') {
+            if name.len() > 0 {
+                if let Ok(age) = age_str.parse::<usize>() {
+                    return Person {
+                        name: name.into(),
+                        age,
+                    };
+                }
+            }
+        }
+        Person::default()
+    }
+    */
+
+    
+    //a bit elegant
+    //using functional primitives
+    /* 
+    fn from(s: &str) -> Person {
+        let mut parts = s.split(',');
+        parts
+            .next()
+            .filter(move |name| name.len() > 0)
+            .and_then(move |name| {
+                parts
+                    .next()
+                    .and_then(move |age_str| age_str.parse::<usize>().ok())
+                    .and_then(move |age| {
+                        parts.next().map_or(
+                            Some(Person {
+                                name: name.into(),
+                                age,
+                            }),
+                            |_| None,
+                        )
+                    })
+            })
+            .unwrap_or_else(Person::default)
+    }
+    */
+
+    //most imperative, though uses pattern extraction
+    /*
+    fn from(s: &str) -> Person {
+        if s.len() > 0 {
+            let mut parts = s.split(',');
+            if let Some(name) = parts.next() {
+                if name.len() > 0 {
+                    if let Some(age_str) = parts.next() {
+                        if let Ok(age) = age_str.parse::<usize>() {
+                            if let None = parts.next() {
+                                return Person {
+                                    name: name.into(),
+                                    age,
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Person::default()
+    }
+    */
 }
 
 fn main() {

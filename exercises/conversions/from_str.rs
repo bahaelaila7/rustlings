@@ -26,7 +26,6 @@ enum ParsePersonError {
     ParseInt(ParseIntError),
 }
 
-// I AM NOT DONE
 
 // Steps:
 // 1. If the length of the provided string is 0, an error should be returned
@@ -40,8 +39,56 @@ enum ParsePersonError {
 
 impl FromStr for Person {
     type Err = ParsePersonError;
+
+    //using functional primitives
     fn from_str(s: &str) -> Result<Person, Self::Err> {
+        (s.len() != 0)
+            .then(move || s)
+            .ok_or(ParsePersonError::Empty)
+            .map(move |s| s.split(',').take(3).fuse().collect::<Vec<&str>>())
+            .and_then(move |parts| {
+                (parts.len() == 2)
+                    .then(move || (parts[0], parts[1]))
+                    .ok_or(ParsePersonError::BadLen)
+            })
+            .and_then(move |(name, age_str)| {
+                (name.len() > 0)
+                    .then(move || (name, age_str))
+                    .ok_or(ParsePersonError::NoName)
+            })
+            .and_then(move |(name, age_str)| {
+                age_str
+                    .parse::<usize>()
+                    .map(move |age| Person {
+                        name: name.into(),
+                        age,
+                    })
+                    .map_err(move |e| ParsePersonError::ParseInt(e))
+            })
     }
+    /*
+    //using imperative + pattern matching
+    fn from_str(s: &str) -> Result<Person, Self::Err> {
+        if s.len() == 0 {
+            return Err(ParsePersonError::Empty);
+        }
+        let parts = s.split(',').take(3).fuse().collect::<Vec<&str>>();
+        if parts.len() != 2 {
+            return Err(ParsePersonError::BadLen);
+        }
+        let (name, age_str) = (parts[0], parts[1]);
+        if name.len() == 0 {
+            return Err(ParsePersonError::NoName);
+        }
+        match age_str.parse::<usize>() {
+            Ok(age) => Person {
+                name: name.into(),
+                age,
+            },
+            Err(e) => Err(ParsePersonError::ParseInt(e)),
+        }
+    }
+    */
 }
 
 fn main() {
